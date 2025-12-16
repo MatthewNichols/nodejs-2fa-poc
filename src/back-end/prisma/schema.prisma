@@ -1,0 +1,86 @@
+// This is your Prisma schema file
+// Documentation: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - stores authentication and profile data
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  password  String   // bcrypt hashed
+
+  // Profile fields
+  phoneNumber String?
+  bio         String?
+
+  // 2FA settings
+  totpEnabled Boolean @default(false)
+  smsEnabled  Boolean @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  totpSecret TotpSecret?
+  smsCodes   SmsCode[]
+  sessions   Session[]
+
+  @@map("users")
+}
+
+// TOTP Secret storage - one per user
+model TotpSecret {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // TOTP configuration
+  secret      String // base32 encoded secret
+  backupCodes String[] // Array of backup codes (hashed)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("totp_secrets")
+}
+
+// SMS verification codes - temporary codes sent via SMS
+model SmsCode {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+  @@map("sms_codes")
+}
+
+// Session storage for express-session
+// This model is used by connect-pg-simple
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String   // Session data as JSON string
+  expiresAt DateTime
+
+  // Optional user association for cleanup
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("sessions")
+}
