@@ -550,6 +550,10 @@ const handleDisableSms = async () => {
       border-radius: 4px;
       text-align: center;
       font-family: monospace;
+      color: #333;
+      font-size: 14px;
+      font-weight: 600;
+      display: block;
     }
   }
 
