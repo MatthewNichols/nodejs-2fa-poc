@@ -121,6 +121,26 @@ const handleVerifyTotp = async () => {
   }
 };
 
+const downloadBackupCodes = () => {
+  const currentDate = new Date().toISOString().split('T')[0];
+  const content = `2FA Backup Codes - Generated ${currentDate}\n\n` +
+    `IMPORTANT: Store these codes in a safe place.\n` +
+    `Each code can only be used once.\n\n` +
+    `Backup Codes:\n` +
+    totpBackupCodes.value.map((code, index) => `${index + 1}. ${code}`).join('\n') +
+    `\n\nThese codes can be used to access your account if you lose your authenticator device.`;
+
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `2fa-backup-codes-${currentDate}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
 const handleDisableTotp = async () => {
   if (!confirm('Are you sure you want to disable TOTP 2FA?')) return;
 
@@ -381,6 +401,15 @@ const handleDisableSms = async () => {
         <div class="backup-codes">
           <code v-for="code in totpBackupCodes" :key="code">{{ code }}</code>
         </div>
+        <div class="backup-actions">
+          <Button
+            label="Save as Text File"
+            icon="pi pi-download"
+            size="small"
+            severity="secondary"
+            @click="downloadBackupCodes"
+          />
+        </div>
 
         <p class="mt-3">3. Enter the code from your app to verify:</p>
         <InputText
@@ -555,6 +584,12 @@ const handleDisableSms = async () => {
       font-weight: 600;
       display: block;
     }
+  }
+
+  .backup-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.75rem;
   }
 
   .dialog-actions {
